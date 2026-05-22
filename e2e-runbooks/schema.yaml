@@ -1,0 +1,117 @@
+name: e2e-runbooks
+version: 1
+description: >-
+  Capability-level e2e test suite. Each capability gets an immutable spec plus
+  an immutable tasks-template; each execution generates a timestamped run record
+  with assertions ticked, tokens, and wall-clock duration. Behaviour-only
+  assertions: HTTP status, response content, persisted state. Never log
+  substrings.
+
+artifacts:
+  - id: proposal
+    generates: openspec/changes/{change-id}/proposal.md
+    description: >-
+      Proposes a new capability test. Names the behaviour to assert, the setup
+      cost class, fixtures needed, the API client invocation, and the chosen N
+      prefix. On first invocation in a project, also scaffolds the e2e/
+      directory tree.
+    template: proposal.md
+    instruction: |
+      BEFORE filling the proposal, check whether the consumer project's e2e/
+      directory has been scaffolded. If `e2e/README.md` does NOT exist, run
+      the scaffold step first (skip it silently when the file already
+      exists; the scaffold is idempotent and one-time):
+
+        1. Create directories: `e2e/`, `e2e/fixtures/`, `e2e/testing/`,
+           `e2e/testing/runs/`.
+        2. Copy `templates/scaffold/e2e-readme.md` to `e2e/README.md`.
+        3. Copy `templates/scaffold/fixtures-readme.md` to
+           `e2e/fixtures/README.md`.
+        4. Copy `templates/scaffold/testing-readme.md` to
+           `e2e/testing/README.md`.
+        5. Copy `templates/scaffold/runs-readme.md` to
+           `e2e/testing/runs/README.md`.
+        6. Append the contents of `templates/scaffold/gitignore-snippet.txt`
+           to the consumer project's root `.gitignore` (create the file if
+           missing). The snippet must ignore `e2e/testing/runs/*.md` but
+           keep `e2e/testing/runs/README.md` tracked, so use a negation
+           pattern.
+        7. Stage all scaffolded files and the .gitignore change so the
+           user can review.
+
+      Then fill the proposal. Behaviour-only assertions: HTTP status codes,
+      response body content, persisted state in backing services. Never
+      assert on log substrings; logs drift across versions. Setup cost
+      class determines the {N} prefix in the spec filename and the
+      execution order in a sweep. Lower N = lower setup cost = runs first.
+      The companion skill at `.agents/skills/e2e-runbooks/SKILL.md`
+      (when present via Lukk17/agent-standards) explains the methodology in
+      full.
+    requires: []
+
+  - id: test-spec
+    generates: e2e/testing/{N}-{capability}-test.md
+    description: >-
+      The immutable spec for one capability test. Six fixed sections: What
+      this verifies, Prerequisites, Reset state, Run, Expected, Fixtures.
+    template: test-spec.md
+    instruction: |
+      Generate the immutable spec from the proposal. Six fixed sections in
+      this order: What this verifies, Prerequisites, Reset state, Run,
+      Expected, Fixtures. Each prerequisite check is its own fenced code
+      block with prose stating the success criterion. Each Reset command is
+      its own fenced code block, in execution order. Each Run step is a
+      single API client invocation; multi-step tests instruct the runner to
+      wait for a success response before the next step. Expected assertions
+      are observable behaviour only.
+    requires: [proposal]
+
+  - id: tasks-template
+    generates: e2e/testing/{N}-{capability}-tasks.template.md
+    description: >-
+      The immutable checklist template mirroring the spec, copied at each
+      execution. Contains Result summary fields and an Additional tasks I did
+      section.
+    template: tasks-template.md
+    instruction: |
+      Generate the tasks-template by mirroring each Prerequisites, Reset,
+      Run, and Expected item from the spec as a checkbox. Append a Verdict
+      checkbox, a Result summary block with fields Input tokens, Output
+      tokens, Start (UTC), End (UTC), Duration, and an Additional tasks I did
+      section for off-spec runner actions.
+    requires: [test-spec]
+
+  - id: run
+    generates: e2e/testing/runs/{utc-timestamp}_{N}-{capability}-tasks.md
+    description: >-
+      The filled-in execution record. Created by copying the tasks-template
+      and filling in actual results, ticks, tokens, and durations.
+    template: run.md
+    instruction: |
+      Create the run record by copying the matching tasks-template to
+      `e2e/testing/runs/<UTC-timestamp>_{N}-{capability}-tasks.md`. UTC
+      timestamp uses ISO-8601 with colons replaced by hyphens
+      (`2026-05-12T17-23-36`) so the filename is filesystem-safe.
+
+      Runner contract:
+      1. Record `Start (UTC)` as the very first action, before prerequisite
+         checks.
+      2. Execute each task in spec order. Tick the box on success; record
+         what went wrong on failure.
+      3. After the Verdict line is decided, record `End (UTC)`.
+      4. Compute Duration = End - Start as HH:MM:SS. Wall-clock for the
+         whole test (prereqs + reset + run + verify), NOT just the API
+         client call.
+      5. Fill Input / Output tokens with the best LLM-token estimate. Leave
+         blank if exact numbers aren't available. Do not invent.
+      6. Write the Result summary paragraph and the Verdict (PASS or FAIL).
+      7. Log anything done outside the spec under "Additional tasks I did".
+    requires: [tasks-template]
+
+apply:
+  requires: run
+  tracks: run.md
+  instruction: |
+    The apply phase for a capability test IS the run record. The run
+    artifact is the executable artifact; there is no separate apply step.
+    Treat any `/opsx:apply` invocation as "execute the next pending run".
