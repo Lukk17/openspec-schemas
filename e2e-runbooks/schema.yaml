@@ -109,7 +109,7 @@ artifacts:
     requires: [tasks-template]
 
 apply:
-  requires: run
+  requires: [run]
   tracks: run.md
   instruction: |
     The apply phase for a capability test IS the run record. The run
