@@ -1,0 +1,15 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Node tooling (e.g. OpenSpec CLI invocations under test)
+node_modules/
+
+# Per-user local notes
+*.local.md
+
+# JetBrains IDE
+.idea/
+
+# Per-user Claude Code local settings (toggles, not project policy)
+.claude/settings.local.json

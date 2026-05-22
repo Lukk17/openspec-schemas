@@ -45,7 +45,7 @@ git fetch agent-standards
 ```
 
 ```bash
-git checkout agent-standards/master -- .agents .claude .opencode .codex docs/AGENT_TOOLING.md docs/MCP_SETUP.md AGENTS.md.example kilo.jsonc.example opencode.json.example .mcp.json.example
+git checkout agent-standards/master -- .agents .claude .opencode .codex docs/AGENT_TOOLING.md docs/MCP_SETUP.md AGENTS.md.example kilo.jsonc.example opencode.json .mcp.json
 ```
 
 Commit the imported files when you're ready.
@@ -61,7 +61,7 @@ What this pulls:
 - [docs/AGENT_TOOLING.md](AGENT_TOOLING.md): this document, kept in sync with the central repo.
 - [docs/MCP_SETUP.md](MCP_SETUP.md): human-side MCP setup guide (env vars, keys, OS-specific commands).
 - [AGENTS.md.example](../AGENTS.md.example), [kilo.jsonc.example](../kilo.jsonc.example),
-  [opencode.json.example](../opencode.json.example), [.mcp.json.example](../.mcp.json.example): templates you rename
+  [opencode.json.example](../opencode.json), [.mcp.json.example](../.mcp.json): templates you rename
   and customise.
 
 What this does **not** pull:
@@ -80,11 +80,11 @@ cp kilo.jsonc.example kilo.jsonc
 ```
 
 ```bash
-cp opencode.json.example opencode.json
+cp opencode.json opencode.json
 ```
 
 ```bash
-cp .mcp.json.example .mcp.json
+cp .mcp.json .mcp.json
 ```
 
 The `kilo.jsonc`, `opencode.json`, and `.mcp.json` copies are optional. Only `AGENTS.md` is required.
@@ -99,7 +99,7 @@ git fetch agent-standards
 ```
 
 ```bash
-git checkout agent-standards/master -- .agents .claude .opencode .codex docs/AGENT_TOOLING.md docs/MCP_SETUP.md .mcp.json.example opencode.json.example
+git checkout agent-standards/master -- .agents .claude .opencode .codex docs/AGENT_TOOLING.md docs/MCP_SETUP.md .mcp.json opencode.json
 ```
 
 Commit the refreshed files.
@@ -110,7 +110,7 @@ This refreshes:
 - The regenerated subagent files in [.claude/agents/](../.claude/agents/) and [.opencode/agents/](../.opencode/agents/)
   (Kilo Code reads from the OpenCode directory natively).
 - This tooling document and [docs/MCP_SETUP.md](MCP_SETUP.md).
-- The MCP templates [.mcp.json.example](../.mcp.json.example) and [opencode.json.example](../opencode.json.example) so
+- The MCP templates [.mcp.json.example](../.mcp.json) and [opencode.json.example](../opencode.json) so
   new servers and schema changes flow downstream.
 
 The [AGENTS.md.example](../AGENTS.md.example) and [kilo.jsonc.example](../kilo.jsonc.example) templates and your local
@@ -161,17 +161,17 @@ The full catalogue lives in [.agents/skills/](../.agents/skills/) (one directory
 
 ### MCP servers
 
-Two committed templates ship the default MCP servers: [.mcp.json.example](../.mcp.json.example) (Claude Code) and the
-`mcp` block in [opencode.json.example](../opencode.json.example) (OpenCode plus Kilo Code).
+Two committed templates ship the default MCP servers: [.mcp.json.example](../.mcp.json) (Claude Code) and the
+`mcp` block in [opencode.json.example](../opencode.json) (OpenCode plus Kilo Code).
 
 Copy them into place when you want the shared server set:
 
 ```bash
-cp .mcp.json.example .mcp.json
+cp .mcp.json .mcp.json
 ```
 
 ```bash
-cp opencode.json.example opencode.json
+cp opencode.json opencode.json
 ```
 
 Full human setup (prerequisites, key acquisition, environment-variable export per OS, Claude Desktop and Codex CLI
