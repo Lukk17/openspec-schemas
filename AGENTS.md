@@ -176,9 +176,23 @@ projects to consume; it does not consume OpenSpec internally. The `e2e-runbooks`
 OpenSpec custom schema (a `schema.yaml` plus templates) that other projects install under their
 `openspec/schemas/e2e-runbooks/` directory.
 
+**Validating a schema while you work**: spin up a throwaway consumer project, install the schema, run validate +
+round-trip. The same flow lives in [`.github/workflows/validate.yml`](.github/workflows/validate.yml); the snippet
+below mirrors the local development loop:
+
+```bash
+tmp=$(mktemp -d)
+cd "$tmp" && openspec init --tools none
+mkdir -p openspec/schemas
+cp -r <path-to-this-repo>/<schema-name> openspec/schemas/
+openspec schema validate <schema-name> --verbose
+openspec new change "probe-$(date +%s)" --schema <schema-name> --description "probe"
+openspec templates --schema <schema-name>
+```
+
 If a future change to this repo genuinely warrants OpenSpec-style proposal tracking (e.g., a new schema beyond
 `e2e-runbooks`), initialise OpenSpec at that point and follow the standard lifecycle. For now: trivial edits land
-directly; non-trivial work is planned in `IMPLEMENTATION_PLAN.md` or by opening an issue.
+directly; non-trivial work is planned per the conversation and committed in logical groupings.
 
 ---
 
@@ -186,48 +200,68 @@ directly; non-trivial work is planned in `IMPLEMENTATION_PLAN.md` or by opening 
 
 `openspec-schemas` is a public collection of community [OpenSpec](https://github.com/Fission-AI/OpenSpec) custom
 schemas published by Łukasz Sarna. OpenSpec is a spec-driven workflow for AI coding agents; a *schema* is a bundle
-(`schema.yaml` plus markdown templates) that defines a custom artifact lifecycle the agent can drive via slash
-commands like `/opsx:propose`, `/opsx:apply`, `/opsx:archive`.
+(`schema.yaml` plus markdown templates) that defines a custom artifact lifecycle the agent can drive via OpenSpec
+slash commands (e.g. `openspec new change`, `openspec instructions`, `openspec archive`).
 
-The first schema, `e2e-runbooks`, operationalises capability-level end-to-end testing: each capability is a triple
-(immutable spec + immutable tasks template + timestamped run record under `runs/`), assertions are observable
-behaviour only (HTTP status, response body, persisted state — never log substrings), and every run records
-per-execution token spend and duration. The companion `e2e-runbooks` skill lives in
-[`agent-standards`](https://github.com/Lukk17/agent-standards) at `.agents/skills/e2e-runbooks/`; schema and skill
-share methodology — the schema operationalises it for OpenSpec users, the skill documents it for everyone else.
+The first schema, `e2e-runbooks`, operationalises capability-level end-to-end testing: each capability gets an
+immutable spec, an immutable tasks template, and one timestamped run record per execution. Assertions are observable
+behaviour only (HTTP status, response body, persisted state — never log substrings). Each run records start/end UTC,
+duration, and best-estimate LLM token consumption. The schema ships alongside a methodology skill
+(`.agents/skills/e2e-runbooks/`) and a runner subagent (`.claude/agents/e2e-runner.md`,
+`.opencode/agents/e2e-runner.md`) in [`agent-standards`](https://github.com/Lukk17/agent-standards). Skill, subagent,
+and schema each install independently; together they reinforce each other.
 
 Consumers install a schema by copying its folder into their own project's `openspec/schemas/<name>/` directory.
-OpenSpec has no registry, marketplace, or `schema install <url>` CLI today; install is a manual
-`git clone --depth 1 ... && cp -r` step documented per-schema in the schema's own `README.md`.
+OpenSpec has no registry, marketplace, or `schema install <url>` CLI today (tracked in
+[Fission-AI/OpenSpec#693](https://github.com/Fission-AI/OpenSpec/issues/693)); install is a manual
+`git clone --depth 1 --branch vX.Y.Z ... && cp -r` step documented in [README.md](README.md). Pinning to a release
+tag is the only safe way to guard against upstream drift.
 
-The repo itself contains no runtime code, no tests, no CI pipeline (yet). It is a documentation-and-templates
-artifact: ship clear `schema.yaml` files, ship clean markdown templates, ship per-schema READMEs that show install
-and usage.
+The repo itself contains no runtime code, no application tests. It ships:
+
+- One folder per schema at the repo root.
+- A GitHub Actions pipeline ([`.github/workflows/`](.github/workflows/)) that validates every schema on PR/push,
+  round-trips a `new change` for each, runs markdownlint + lychee link-checking, and releases on `v*.*.*` tag.
+- The agent-standards import in `.agents/`, `.claude/`, `.opencode/`, `.codex/`.
 
 ---
 
 ## Architecture
 
-- **Repository type**: documentation / template bundle. No application code, no runtime, no test suite.
+- **Repository type**: documentation / template bundle plus CI. No application code, no application tests; the test
+  surface is the schemas themselves, exercised by the validate workflow.
 - **Layout**: one top-level directory per schema (e.g., `e2e-runbooks/`), each containing a `schema.yaml`,
   `README.md`, `INTEGRATION.md`, and a `templates/` subdirectory with the artifact markdown templates and a
-  `scaffold/` for one-time consumer-project scaffolding files. The detailed file-by-file plan lives in
-  [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+  `scaffold/` for one-time consumer-project scaffolding files.
 - **Contract surface**: each `schema.yaml` declares the artifact DAG (which file produces which, in what order) and
   per-artifact agent instructions. OpenSpec consumes these files; the schema's correctness is measured by whether
-  a consumer project, after installing, can run `/opsx:propose <capability>` through `/opsx:archive` cleanly.
-- **Deploy target**: GitHub public repo. Consumption is `git clone --depth 1 + cp -r`; there is no package registry,
-  no release artifact beyond tagged git refs and `CHANGELOG.md` entries.
-- **Versioning**: per-schema semver in the schema's own `CHANGELOG.md` plus a top-level `CHANGELOG.md` summarising
-  collection-level changes. Breaking changes to a schema's artifact DAG require a major bump and migration notes in
-  the per-schema `INTEGRATION.md`.
+  `openspec schema validate <name>` passes and `openspec new change --schema <name>` plus
+  `openspec instructions <artifact> --change <id>` resolve every artifact to a sensible path inside the change
+  directory.
+- **Deploy target**: GitHub public repo. Consumption is `git clone --depth 1 --branch vX.Y.Z + cp -r`. Releases are
+  produced by the `release` workflow on `v*.*.*` tag push.
+- **Versioning**: per-schema semver. Breaking changes to a schema's artifact DAG (renamed artifact id, reordered
+  `requires`, removed field) bump the major; new artifacts or relaxed constraints bump the minor; doc and
+  instruction-prose changes bump the patch.
+- **OpenSpec model gotchas** (carried in [`e2e-runbooks/INTEGRATION.md`](e2e-runbooks/INTEGRATION.md); apply to any
+  future schema too):
+  - OpenSpec resolves `generates:` paths relative to the change directory. Use bare filenames like `proposal.md`;
+    `openspec/changes/{change-id}/proposal.md` produces a doubled path and leaves `{change-id}` literal.
+  - OpenSpec does not substitute schema placeholders (`{N}`, `{capability}`, `{change-id}`, etc.) in `generates:`
+    paths. Placeholders only work in instruction prose, where the agent fills them.
+  - `openspec archive` only auto-promotes `openspec/specs/`. Artifacts with a permanent home elsewhere (e.g.
+    `e2e/testing/`) must be written by the agent in BOTH locations via dual-write instruction prose.
+  - `apply.requires` must be an **array** (`[run]`), never a scalar.
+  - The CI validate workflow round-trips `openspec new change` and checks `openspec templates` output for
+    unsubstituted placeholders; this catches the placeholder-leak class of bug.
 - **Constraints**:
   - Templates must remain agent-agnostic: nothing in a schema may assume Claude Code specifically; OpenCode, Kilo,
     and Codex must all be able to drive the lifecycle.
   - Schemas must not depend on each other. Each is independently installable.
-  - Skill-side methodology (in `agent-standards`) is the source of truth for *why*; schema templates are the source
-    of truth for *what files exist and in what order*. Drift between the two is the most likely defect class —
-    update both together.
+  - Skill-side methodology (in `agent-standards`) is the source of truth for *why*. Schema templates are the source
+    of truth for *what files exist and in what order*. The subagent (in `agent-standards`) is the source of truth for
+    *runner behaviour at execution time*. Drift across the three is the most likely defect class — update all three
+    together.
 - **Agent tooling**: this repo imports `agent-standards` (see [docs/AGENT_TOOLING.md](docs/AGENT_TOOLING.md)) so the
   authoring agent gets the same skills, subagents, and conventions used in consumer projects. That keeps the schema
   author's workflow honest: if a skill doesn't work for the schema's own author, it won't work for the schema's
