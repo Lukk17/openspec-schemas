@@ -31,7 +31,8 @@ jobs:
         run: |
           set -euo pipefail
           repo_root=$(pwd)
-          for schema_yaml in $(find . -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*'); do
+          # NUL-delimited so paths with spaces never word-split.
+          while IFS= read -r -d '' schema_yaml; do
             schema_dir=$(dirname "$schema_yaml")
             schema_name=$(basename "$schema_dir")
             echo "::group::Validate $schema_name"
@@ -41,10 +42,17 @@ jobs:
             mkdir -p openspec/schemas
             cp -r "$repo_root/$schema_dir" openspec/schemas/
             openspec schema validate "$schema_name"
+            # Same placeholder-leak gate the validate workflow runs, so a tag
+            # pushed on an unmerged commit can't ship a leaked path.
+            openspec templates --schema "$schema_name" > templates.out
+            if grep -E '\{[A-Za-z0-9_-]+\}' templates.out; then
+              echo "::error::Unsubstituted placeholder leaked into a $schema_name template path"
+              exit 1
+            fi
             cd "$repo_root"
             rm -rf "$tmp"
             echo "::endgroup::"
-          done
+          done < <(find . -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*' -print0)
 
       - name: Create GitHub Release
         env:

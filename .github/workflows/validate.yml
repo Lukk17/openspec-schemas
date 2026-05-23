@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     name: Validate schemas with OpenSpec CLI
@@ -32,22 +36,31 @@ jobs:
       - name: Discover schemas
         id: discover
         run: |
+          set -euo pipefail
           schemas=$(find . -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*' | sed 's|^\./||' | sed 's|/schema\.yaml$||' | sort)
           echo "Found schemas:"
           echo "$schemas"
-          echo "schemas<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$schemas" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
           if [ -z "$schemas" ]; then
             echo "::error::No schema.yaml found at repo root (depth <= 2)"
             exit 1
           fi
+          {
+            echo "schemas<<EOF"
+            echo "$schemas"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
+      # The discovered schema list is passed through an env var, not interpolated
+      # into the script body, so a directory name with shell metacharacters
+      # (possible on a fork PR) is treated as data, never executed.
       - name: Validate each schema in a temp OpenSpec project
+        env:
+          SCHEMAS: ${{ steps.discover.outputs.schemas }}
         run: |
           set -euo pipefail
           repo_root=$(pwd)
-          while IFS= read -r schema_dir; do
+          while IFS= read -r schema_dir || [ -n "$schema_dir" ]; do
+            [ -z "$schema_dir" ] && continue
             schema_name=$(basename "$schema_dir")
             echo ""
             echo "::group::Validate $schema_name"
@@ -60,13 +73,16 @@ jobs:
             cd "$repo_root"
             rm -rf "$tmp"
             echo "::endgroup::"
-          done <<< "${{ steps.discover.outputs.schemas }}"
+          done <<< "$SCHEMAS"
 
       - name: Round-trip new change with each schema
+        env:
+          SCHEMAS: ${{ steps.discover.outputs.schemas }}
         run: |
           set -euo pipefail
           repo_root=$(pwd)
-          while IFS= read -r schema_dir; do
+          while IFS= read -r schema_dir || [ -n "$schema_dir" ]; do
+            [ -z "$schema_dir" ] && continue
             schema_name=$(basename "$schema_dir")
             echo ""
             echo "::group::Round-trip $schema_name"
@@ -76,18 +92,17 @@ jobs:
             mkdir -p openspec/schemas
             cp -r "$repo_root/$schema_dir" openspec/schemas/
             openspec new change "ci-roundtrip-$schema_name" --schema "$schema_name" --description "CI round-trip probe"
-            # Resolve the Write to: path for every artifact and assert it falls
-            # inside the change directory (no doubled prefixes, no literal
-            # placeholders).
-            change_dir="openspec/changes/ci-roundtrip-$schema_name"
-            test -f "$change_dir/.openspec.yaml" || { echo "::error::Change scaffold missing .openspec.yaml"; exit 1; }
-            openspec templates --schema "$schema_name" > /tmp/templates.out
-            cat /tmp/templates.out
-            if grep -E '\{[a-z-]+\}' /tmp/templates.out; then
+            # Assert the change scaffold landed, then check that no schema
+            # placeholder leaked into the resolved template paths.
+            change_dir=$(find openspec/changes -maxdepth 2 -name .openspec.yaml | head -1 | xargs -r dirname)
+            test -n "$change_dir" || { echo "::error::Change scaffold missing .openspec.yaml"; exit 1; }
+            openspec templates --schema "$schema_name" > templates.out
+            cat templates.out
+            if grep -E '\{[A-Za-z0-9_-]+\}' templates.out; then
               echo "::error::Unsubstituted placeholder leaked into a template path"
               exit 1
             fi
             cd "$repo_root"
             rm -rf "$tmp"
             echo "::endgroup::"
-          done <<< "${{ steps.discover.outputs.schemas }}"
+          done <<< "$SCHEMAS"
