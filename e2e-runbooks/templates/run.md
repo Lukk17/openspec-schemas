@@ -50,7 +50,8 @@ together. Edit the matching tasks-template in the same change.
 
 ## Result summary
 
-
+<!-- One-paragraph narrative anchored to the Expected assertions. Write it
+above this line; fill the metrics below. -->
 
 Input tokens:
 

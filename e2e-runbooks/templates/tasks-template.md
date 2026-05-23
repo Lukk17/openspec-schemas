@@ -42,9 +42,8 @@ spec says "None". -->
 ## Result summary
 
 <!-- One-paragraph narrative of what happened during this run. Anchor to the
-Expected assertions. -->
-
-
+Expected assertions. Write your summary above this line, then fill the
+fields below. -->
 
 Input tokens:
 
