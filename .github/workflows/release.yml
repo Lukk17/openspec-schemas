@@ -1,0 +1,57 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install OpenSpec CLI
+        run: npm install --global @fission-ai/openspec@latest
+
+      - name: Validate all schemas before releasing
+        run: |
+          set -euo pipefail
+          repo_root=$(pwd)
+          for schema_yaml in $(find . -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*'); do
+            schema_dir=$(dirname "$schema_yaml")
+            schema_name=$(basename "$schema_dir")
+            echo "::group::Validate $schema_name"
+            tmp=$(mktemp -d)
+            cd "$tmp"
+            openspec init --tools none > /dev/null
+            mkdir -p openspec/schemas
+            cp -r "$repo_root/$schema_dir" openspec/schemas/
+            openspec schema validate "$schema_name"
+            cd "$repo_root"
+            rm -rf "$tmp"
+            echo "::endgroup::"
+          done
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          gh release create "$tag" \
+            --title "$tag" \
+            --generate-notes \
+            --verify-tag

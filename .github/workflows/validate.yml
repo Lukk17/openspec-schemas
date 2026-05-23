@@ -1,0 +1,93 @@
+name: validate-schemas
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate schemas with OpenSpec CLI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install OpenSpec CLI
+        run: npm install --global @fission-ai/openspec@latest
+
+      - name: Print OpenSpec version
+        run: openspec --version
+
+      - name: Discover schemas
+        id: discover
+        run: |
+          schemas=$(find . -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*' | sed 's|^\./||' | sed 's|/schema\.yaml$||' | sort)
+          echo "Found schemas:"
+          echo "$schemas"
+          echo "schemas<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$schemas" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          if [ -z "$schemas" ]; then
+            echo "::error::No schema.yaml found at repo root (depth <= 2)"
+            exit 1
+          fi
+
+      - name: Validate each schema in a temp OpenSpec project
+        run: |
+          set -euo pipefail
+          repo_root=$(pwd)
+          while IFS= read -r schema_dir; do
+            schema_name=$(basename "$schema_dir")
+            echo ""
+            echo "::group::Validate $schema_name"
+            tmp=$(mktemp -d)
+            cd "$tmp"
+            openspec init --tools none > /dev/null
+            mkdir -p openspec/schemas
+            cp -r "$repo_root/$schema_dir" openspec/schemas/
+            openspec schema validate "$schema_name" --verbose
+            cd "$repo_root"
+            rm -rf "$tmp"
+            echo "::endgroup::"
+          done <<< "${{ steps.discover.outputs.schemas }}"
+
+      - name: Round-trip new change with each schema
+        run: |
+          set -euo pipefail
+          repo_root=$(pwd)
+          while IFS= read -r schema_dir; do
+            schema_name=$(basename "$schema_dir")
+            echo ""
+            echo "::group::Round-trip $schema_name"
+            tmp=$(mktemp -d)
+            cd "$tmp"
+            openspec init --tools none > /dev/null
+            mkdir -p openspec/schemas
+            cp -r "$repo_root/$schema_dir" openspec/schemas/
+            openspec new change "ci-roundtrip-$schema_name" --schema "$schema_name" --description "CI round-trip probe"
+            # Resolve the Write to: path for every artifact and assert it falls
+            # inside the change directory (no doubled prefixes, no literal
+            # placeholders).
+            change_dir="openspec/changes/ci-roundtrip-$schema_name"
+            test -f "$change_dir/.openspec.yaml" || { echo "::error::Change scaffold missing .openspec.yaml"; exit 1; }
+            openspec templates --schema "$schema_name" > /tmp/templates.out
+            cat /tmp/templates.out
+            if grep -E '\{[a-z-]+\}' /tmp/templates.out; then
+              echo "::error::Unsubstituted placeholder leaked into a template path"
+              exit 1
+            fi
+            cd "$repo_root"
+            rm -rf "$tmp"
+            echo "::endgroup::"
+          done <<< "${{ steps.discover.outputs.schemas }}"
