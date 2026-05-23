@@ -15,7 +15,7 @@ Every schema in this repository ships as a self-contained folder with a `schema.
 
 | Tool | Minimum version | Why |
 | --- | --- | --- |
-| [Node.js](https://nodejs.org/) | 18.x | Runs the OpenSpec CLI. |
+| [Node.js](https://nodejs.org/) | 20.x | Runs the OpenSpec CLI; CI runs on Node 20. |
 | [OpenSpec CLI](https://github.com/Fission-AI/OpenSpec) | 1.3.x | Drives proposals, applies, archives. Install with `npm install --global @fission-ai/openspec@latest`. |
 | Git | any recent | Schema install is `git clone --depth 1 + cp -r`; tags pin a release. |
 
@@ -91,9 +91,11 @@ agent-standards selective checkout into the consumer project; the schema is inst
 
 | Schema | Skill (in `agent-standards`) | Subagent (in `agent-standards`) |
 | --- | --- | --- |
-| [e2e-runbooks](./e2e-runbooks/) | [`.agents/skills/e2e-runbooks/`](https://github.com/Lukk17/agent-standards/tree/master/.agents/skills/e2e-runbooks) | `.claude/agents/e2e-runner.md`, `.opencode/agents/e2e-runner.md` |
+| [e2e-runbooks](./e2e-runbooks/) | [`.agents/skills/e2e-runbooks/`](https://github.com/Lukk17/agent-standards/tree/master/.agents/skills/e2e-runbooks) | `.claude/agents/e2e-runner.md`, `.opencode/agents/e2e-runner.md` _(planned)_ |
 
-Skills and schemas can be adopted independently; pairing them just reduces the seams.
+The `e2e-runbooks` skill ships today. The `e2e-runner` subagent is planned for a future agent-standards release — the
+schema and skill are fully usable without it; it just automates the runner role. Skills and schemas can be adopted
+independently; pairing them reduces the seams.
 
 ## Validation in CI
 

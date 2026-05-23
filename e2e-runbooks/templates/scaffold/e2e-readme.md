@@ -56,6 +56,12 @@ banner once at sweep start. Any `[FAILED]` row under external dependencies block
 
 ## Adding a new test
 
-Use `/opsx:new --schema e2e-runbooks "add <capability> e2e test"`. The schema walks through proposal →
-test-spec → tasks-template → run. Or, without OpenSpec, follow the methodology in the `e2e-runbooks` skill
-and hand-write the three files in the conventional shape.
+Create the change with the e2e-runbooks schema:
+
+```bash
+openspec new change "add-<capability>-test" --schema e2e-runbooks
+```
+
+Then drive it with `/opsx:propose` (if `default_schema: e2e-runbooks` is set in `openspec/config.yaml`). The schema
+walks through proposal → test-spec → tasks-template → run. Or, without OpenSpec, follow the methodology in the
+`e2e-runbooks` skill and hand-write the three files in the conventional shape.

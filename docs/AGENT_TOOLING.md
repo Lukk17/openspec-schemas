@@ -278,7 +278,7 @@ Remove-Item -Recurse -Force $env:TEMP\lukk17-schemas
 Use it per-change:
 
 ```bash
-openspec new --schema e2e-runbooks "add weather-mcp capability test"
+openspec new change "add-weather-mcp-test" --schema e2e-runbooks
 ```
 
 Or set as the project default in `openspec/config.yaml`:

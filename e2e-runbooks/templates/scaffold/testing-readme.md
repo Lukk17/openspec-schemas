@@ -38,5 +38,6 @@ criterion.
 
 ## Adding a new test
 
-Use `/opsx:new --schema e2e-runbooks "add <capability> e2e test"` (if OpenSpec is set up), or hand-write
-the spec + tasks-template pair following the methodology in the companion skill.
+If OpenSpec is set up, run `openspec new change "add-<capability>-test" --schema e2e-runbooks` (or `/opsx:propose`
+when `default_schema: e2e-runbooks` is configured). Otherwise hand-write the spec + tasks-template pair following the
+methodology in the companion skill.

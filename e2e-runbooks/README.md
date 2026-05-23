@@ -43,10 +43,12 @@ substitute schema placeholders in `generates:` paths.
 
 ## Install
 
-OpenSpec has no schema-install CLI yet. From your consumer project's root:
+Your consumer project must already have OpenSpec initialised (`openspec init`); the schema installs under its
+`openspec/schemas/` directory. OpenSpec has no schema-install CLI yet, so the install is a manual copy. From the
+consumer project's root:
 
 ```bash
-git clone --depth 1 https://github.com/Lukk17/openspec-schemas /tmp/lukk17-schemas
+git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas /tmp/lukk17-schemas
 ```
 
 ```bash
@@ -58,7 +60,7 @@ rm -rf /tmp/lukk17-schemas
 ```
 
 ```powershell
-git clone --depth 1 https://github.com/Lukk17/openspec-schemas $env:TEMP\lukk17-schemas
+git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas $env:TEMP\lukk17-schemas
 ```
 
 ```powershell
@@ -69,13 +71,13 @@ Copy-Item -Recurse $env:TEMP\lukk17-schemas\e2e-runbooks openspec\schemas\
 Remove-Item -Recurse -Force $env:TEMP\lukk17-schemas
 ```
 
-Then either invoke per-change:
+Then either invoke per-change (the `change` subcommand is required; `--schema` is an option on it):
 
 ```bash
-openspec new --schema e2e-runbooks "add weather-mcp capability test"
+openspec new change "add-weather-mcp-test" --schema e2e-runbooks
 ```
 
-Or set as the default in your project's `openspec/config.yaml`:
+Or set it as the default in your project's `openspec/config.yaml` and drive it with `/opsx:propose`:
 
 ```yaml
 default_schema: e2e-runbooks
@@ -89,10 +91,10 @@ This schema is one corner of a three-piece kit shipped together by
 - **Skill** at `.agents/skills/e2e-runbooks/SKILL.md` — methodology source of truth. Behaviour-only assertions, canary
   fixtures, API client alternatives (Bruno, hurl, REST Client, curl, httpie), runs-directory contract, generic worked
   examples.
-- **Subagent** at `.claude/agents/e2e-runner.md` and `.opencode/agents/e2e-runner.md` — the recommended delegate when
-  driving a sweep end-to-end. Owns the runner contract (Start/End UTC, Duration, tokens, Verdict) and the change-dir /
-  `e2e/testing/runs/` dual-write. The subagent is imported into a consumer project via the agent-standards selective
-  checkout; pull it when you adopt this schema.
+- **Subagent** at `.claude/agents/e2e-runner.md` and `.opencode/agents/e2e-runner.md` — _planned, not yet released._
+  Intended as the recommended delegate when driving a sweep end-to-end: it will own the runner contract (Start/End
+  UTC, Duration, tokens, Verdict) and the change-dir / `e2e/testing/runs/` dual-write. Until it ships in
+  agent-standards, drive runs from the main session or a general runner; the schema and skill work without it.
 - **Schema** (this folder) — operationalises the methodology for OpenSpec users via the artifact DAG above.
 
 Each piece is independently installable: the skill works in projects without OpenSpec, the schema works in projects

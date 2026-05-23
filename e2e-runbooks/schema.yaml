@@ -13,7 +13,7 @@ description: >-
 #
 #   - test-spec.md      ──►  e2e/testing/{N}-{capability}-test.md
 #   - tasks-template.md ──►  e2e/testing/{N}-{capability}-tasks.template.md
-#   - run.md            ──►  e2e/testing/runs/{utc-ts}_{N}-{capability}-tasks.md
+#   - run.md            ──►  e2e/testing/runs/{utc-timestamp}_{N}-{capability}-tasks.md
 #
 # OpenSpec's archive command only auto-promotes openspec/specs/ content, so
 # each instruction below tells the agent to write the file in BOTH locations:
@@ -62,9 +62,10 @@ artifacts:
       execution order in a sweep. Lower N = lower setup cost = runs first.
       The companion skill at `.agents/skills/e2e-runbooks/SKILL.md`
       (shipped by Lukk17/agent-standards) explains the methodology in
-      full. The matching subagent at `.claude/agents/e2e-runner.md` /
-      `.opencode/agents/e2e-runner.md` (also shipped by agent-standards)
-      is the recommended delegate when driving a sweep end-to-end.
+      full. A matching `e2e-runner` subagent is planned in agent-standards
+      (`.claude/agents/e2e-runner.md` / `.opencode/agents/e2e-runner.md`);
+      prefer it as the sweep delegate once present, otherwise drive the
+      run from the main session.
 
       The proposal itself stays inside the change directory; no e2e/
       mirror needed.
@@ -156,9 +157,9 @@ artifacts:
         6. Write the Result summary paragraph and the Verdict (PASS or FAIL).
         7. Log anything done outside the spec under "Additional tasks I did".
 
-      When delegating to a subagent, prefer `e2e-runner` (shipped via
-      agent-standards). The subagent owns the runner contract and the
-      change-dir / runs/ dual-write.
+      If the `e2e-runner` subagent is available (planned in agent-standards),
+      delegate the run to it; it owns the runner contract and the change-dir /
+      runs/ dual-write. Otherwise execute the run from the main session.
     requires: [tasks-template]
 
 apply:

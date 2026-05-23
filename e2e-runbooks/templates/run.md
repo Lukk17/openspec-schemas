@@ -7,6 +7,13 @@ This file is created by copying `../{N}-{capability}-tasks.template.md` to
 this location and filling it in. Filename uses ISO-8601 UTC with colons
 replaced by hyphens: `runs/2026-05-12T17-23-36_{N}-{capability}-tasks.md`.
 
+The Spec back-link above (`../{N}-{capability}-test.md`) is written for the
+canonical home under `e2e/testing/runs/`, where the spec sits one directory
+up. The audit-trail copy in the change directory (`openspec/changes/<id>/run.md`)
+is flat, so when you write that copy, point the link at the sibling
+`test-spec.md` instead. The two copies share the same body and tasks; only
+this back-link differs by location.
+
 Runner contract:
 
 1. Record `Start (UTC)` BEFORE running any prerequisite check. It is the
@@ -22,8 +29,9 @@ Runner contract:
 6. Write the Result summary paragraph and the Verdict (PASS or FAIL).
 7. Log anything done outside the spec under "Additional tasks I did".
 
-This template's body is identical to tasks-template.md; both shapes drift
-together. Edit the matching tasks-template in the same change.
+This template structurally mirrors tasks-template.md (same sections and
+fields); the two drift together, so edit the matching tasks-template in the
+same change. The spec back-link depth is the only intentional difference.
 -->
 
 ## Tasks

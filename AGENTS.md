@@ -208,9 +208,9 @@ The first schema, `e2e-runbooks`, operationalises capability-level end-to-end te
 immutable spec, an immutable tasks template, and one timestamped run record per execution. Assertions are observable
 behaviour only (HTTP status, response body, persisted state — never log substrings). Each run records start/end UTC,
 duration, and best-estimate LLM token consumption. The schema ships alongside a methodology skill
-(`.agents/skills/e2e-runbooks/`) and a runner subagent (`.claude/agents/e2e-runner.md`,
-`.opencode/agents/e2e-runner.md`) in [`agent-standards`](https://github.com/Lukk17/agent-standards). Skill, subagent,
-and schema each install independently; together they reinforce each other.
+(`.agents/skills/e2e-runbooks/`) in [`agent-standards`](https://github.com/Lukk17/agent-standards); a runner subagent
+(`.claude/agents/e2e-runner.md`, `.opencode/agents/e2e-runner.md`) is planned but not yet released. Skill and schema
+install independently and are fully usable today; the subagent, when it lands, just automates the runner role.
 
 Consumers install a schema by copying its folder into their own project's `openspec/schemas/<name>/` directory.
 OpenSpec has no registry, marketplace, or `schema install <url>` CLI today (tracked in
