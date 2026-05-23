@@ -44,7 +44,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Run lychee
-        uses: lycheeverse/lychee-action@v2
+        # SHA-pinned (the only third-party action); Dependabot bumps it. Comment tracks the tag.
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
         with:
           # lychee 0.23+ removed --exclude-mail; mail is excluded by default.
           # Exclude upstream agent-standards content (kept in sync by its own
