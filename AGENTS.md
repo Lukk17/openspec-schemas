@@ -108,8 +108,9 @@ All supported agents read this `AGENTS.md` from the project root and auto-discov
 [.agents/skills/](.agents/skills/). Start your agent from the project root:
 
 - **Claude Code**: run `claude`. Reads [.claude/CLAUDE.md](.claude/CLAUDE.md), which imports this file.
-- **Kilo Code**: reads `AGENTS.md` automatically. Optional [kilo.jsonc](kilo.jsonc.example) for extra config.
-- **OpenCode**: reads `AGENTS.md` automatically. Optional [opencode.json](opencode.json.example) at project root.
+- **Kilo Code**: reads `AGENTS.md` automatically. Optional `kilo.jsonc` for extra config (the template ships in
+  [agent-standards](https://github.com/Lukk17/agent-standards); not used here).
+- **OpenCode**: reads `AGENTS.md` automatically. Project-scope MCP config in [opencode.json](opencode.json).
 - **Codex CLI**: run `codex`. Reads `AGENTS.md` automatically. Global settings in `~/.codex/config.toml`.
 
 ---

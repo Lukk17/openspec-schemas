@@ -43,8 +43,9 @@ jobs:
         uses: lycheeverse/lychee-action@v2
         with:
           # lychee 0.23+ removed --exclude-mail; mail is excluded by default.
-          # Exclude upstream agent-standards content to keep CI focused on
-          # links we author.
+          # Exclude upstream agent-standards content (kept in sync by its own
+          # CI) and the e2e-runbooks/templates/ tree (deliberate {N}, {capability}
+          # placeholders that resolve only after a consumer scaffolds them).
           args: >-
             --no-progress
             --verbose
@@ -54,5 +55,7 @@ jobs:
             --exclude-path .claude
             --exclude-path .codex
             --exclude-path .opencode
+            --exclude-path docs/AGENT_TOOLING.md
+            --exclude-path e2e-runbooks/templates
             './**/*.md'
           fail: true
