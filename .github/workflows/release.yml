@@ -1,23 +1,55 @@
 name: release
 
+# Manual release. Trigger from the Actions tab (or `gh workflow run release.yml`),
+# enter the version, and the job validates it, validates every schema, then
+# creates the tag and the GitHub release. No hand-tagging required.
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version — semver, leading v optional (e.g. 0.1.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: Create GitHub Release
+    name: Validate, tag, and release
     runs-on: ubuntu-latest
 
     steps:
+      # Read the user input via env, never interpolated into the script body,
+      # so a malformed or hostile value is treated as data, not executed.
+      - name: Validate version input
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          version="${VERSION_INPUT#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::'$VERSION_INPUT' is not valid semver (expected MAJOR.MINOR.PATCH, e.g. 0.1.0)"
+            exit 1
+          fi
+          echo "TAG=v$version" >> "$GITHUB_ENV"
+          echo "Release tag will be: v$version"
+
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Ensure tag does not already exist
+        run: |
+          set -euo pipefail
+          git fetch --tags --quiet
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::error::Tag $TAG already exists. Pick a higher version."
+            exit 1
+          fi
+          latest=$(git tag --list 'v*' --sort=-v:refname | head -1)
+          echo "Latest existing tag: ${latest:-<none>}. New tag: $TAG."
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -42,8 +74,8 @@ jobs:
             mkdir -p openspec/schemas
             cp -r "$repo_root/$schema_dir" openspec/schemas/
             openspec schema validate "$schema_name"
-            # Same placeholder-leak gate the validate workflow runs, so a tag
-            # pushed on an unmerged commit can't ship a leaked path.
+            # Same placeholder-leak gate the validate workflow runs, so a release
+            # can't ship a leaked path.
             openspec templates --schema "$schema_name" > templates.out
             if grep -E '\{[A-Za-z0-9_-]+\}' templates.out; then
               echo "::error::Unsubstituted placeholder leaked into a $schema_name template path"
@@ -54,12 +86,17 @@ jobs:
             echo "::endgroup::"
           done < <(find . -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*' -print0)
 
+      - name: Create and push tag
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
-          gh release create "$tag" \
-            --title "$tag" \
-            --generate-notes \
-            --verify-tag
+          set -euo pipefail
+          gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
