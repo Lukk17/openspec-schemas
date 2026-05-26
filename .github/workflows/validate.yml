@@ -21,6 +21,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # Public repo — anonymous checkout, no GITHUB_TOKEN. This job only
+          # reads files; an empty token skips the auth header (least privilege).
+          token: ''
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
