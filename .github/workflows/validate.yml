@@ -19,13 +19,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          # Public repo — anonymous checkout, no GITHUB_TOKEN. This job only
-          # reads files; an empty token skips the auth header (least privilege).
-          token: ''
-          persist-credentials: false
+      # Anonymous checkout of the public repo — no GITHUB_TOKEN. This job only
+      # reads files; actions/checkout requires a token, so we fetch directly.
+      - name: Checkout (anonymous)
+        env:
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "https://github.com/$REPO.git"
+          git -c protocol.version=2 fetch --no-tags --depth 1 origin "$SHA"
+          git checkout -q FETCH_HEAD
 
       - name: Setup Node.js
         uses: actions/setup-node@v6

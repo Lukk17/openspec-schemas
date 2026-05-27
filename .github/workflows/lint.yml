@@ -18,11 +18,17 @@ jobs:
     name: markdownlint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-        with:
-          # Public repo — anonymous checkout, no GITHUB_TOKEN (least privilege).
-          token: ''
-          persist-credentials: false
+      # Anonymous checkout of the public repo — no GITHUB_TOKEN (least privilege).
+      - name: Checkout (anonymous)
+        env:
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "https://github.com/$REPO.git"
+          git -c protocol.version=2 fetch --no-tags --depth 1 origin "$SHA"
+          git checkout -q FETCH_HEAD
       - uses: actions/setup-node@v6
         with:
           node-version: '20'
@@ -46,11 +52,17 @@ jobs:
     name: lychee link check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-        with:
-          # Public repo — anonymous checkout, no GITHUB_TOKEN (least privilege).
-          token: ''
-          persist-credentials: false
+      # Anonymous checkout of the public repo — no GITHUB_TOKEN (least privilege).
+      - name: Checkout (anonymous)
+        env:
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "https://github.com/$REPO.git"
+          git -c protocol.version=2 fetch --no-tags --depth 1 origin "$SHA"
+          git checkout -q FETCH_HEAD
       - name: Run lychee
         # SHA-pinned (the only third-party action); Dependabot bumps it. Comment tracks the tag.
         uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
