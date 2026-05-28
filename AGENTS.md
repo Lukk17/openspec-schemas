@@ -231,7 +231,7 @@ The repo itself contains no runtime code, no application tests. It ships:
 
 - **Repository type**: documentation / template bundle plus CI. No application code, no application tests; the test
   surface is the schemas themselves, exercised by the validate workflow.
-- **Layout**: one top-level directory per schema (e.g., `e2e-runbooks/`), each containing a `schema.yaml`,
+- **Layout**: one directory per schema under `openspec/schemas/` (e.g., `openspec/schemas/e2e-runbooks/`), each containing a `schema.yaml`,
   `README.md`, `INTEGRATION.md`, and a `templates/` subdirectory with the artifact markdown templates and a
   `scaffold/` for one-time consumer-project scaffolding files.
 - **Contract surface**: each `schema.yaml` declares the artifact DAG (which file produces which, in what order) and
@@ -244,7 +244,7 @@ The repo itself contains no runtime code, no application tests. It ships:
 - **Versioning**: per-schema semver. Breaking changes to a schema's artifact DAG (renamed artifact id, reordered
   `requires`, removed field) bump the major; new artifacts or relaxed constraints bump the minor; doc and
   instruction-prose changes bump the patch.
-- **OpenSpec model gotchas** (carried in [`e2e-runbooks/INTEGRATION.md`](e2e-runbooks/INTEGRATION.md); apply to any
+- **OpenSpec model gotchas** (carried in [`openspec/schemas/e2e-runbooks/INTEGRATION.md`](openspec/schemas/e2e-runbooks/INTEGRATION.md); apply to any
   future schema too):
   - OpenSpec resolves `generates:` paths relative to the change directory. Use bare filenames like `proposal.md`;
     `openspec/changes/{change-id}/proposal.md` produces a doubled path and leaves `{change-id}` literal.

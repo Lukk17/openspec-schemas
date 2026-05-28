@@ -6,7 +6,7 @@ Community [OpenSpec](https://github.com/Fission-AI/OpenSpec) schemas for spec-dr
 
 | Schema | Purpose |
 | --- | --- |
-| [e2e-runbooks](./e2e-runbooks/) | Capability-level e2e test suite: spec + tasks-template + run records, behaviour-only assertions, per-run token + duration accounting. |
+| [e2e-runbooks](./openspec/schemas/e2e-runbooks/) | Capability-level e2e test suite: spec + tasks-template + run records, behaviour-only assertions, per-run token + duration accounting. |
 
 Every schema in this repository ships as a self-contained folder with a `schema.yaml`, a `README.md`, an
 `INTEGRATION.md`, and a `templates/` subtree. Schemas are independent — installing one does not pull in the others.
@@ -19,40 +19,57 @@ Every schema in this repository ships as a self-contained folder with a `schema.
 | [OpenSpec CLI](https://github.com/Fission-AI/OpenSpec) | 1.3.x | Drives proposals, applies, archives. Install with `npm install --global @fission-ai/openspec@latest`. |
 | Git | any recent | Schema install is `git clone --depth 1 + cp -r`; tags pin a release. |
 
-Some schemas (notably [e2e-runbooks](./e2e-runbooks/)) work best when paired with the matching skill and subagent in
+Some schemas (notably [e2e-runbooks](./openspec/schemas/e2e-runbooks/)) work best when paired with the matching skill and subagent in
 [Lukk17/agent-standards](https://github.com/Lukk17/agent-standards). See each schema's own README for the specific
 pairings.
 
-## Install (any schema)
+## Install
 
-OpenSpec does not ship a `schema install <url>` command today, so installing is a manual copy. From your consumer
-project's root:
+Every schema in this repo lives at `openspec/schemas/<name>/` — the exact path it needs in your consumer project. To
+install one, copy that one directory across. The source path and the destination path are identical, so the `cp`
+command reads as a straight mirror.
+
+Replace `e2e-runbooks` below with the schema you want. Your consumer project must already have OpenSpec initialised
+(`openspec init`).
+
+**Linux / macOS / WSL:**
 
 ```bash
 git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas /tmp/lukk17-schemas
 ```
 
 ```bash
-cp -r /tmp/lukk17-schemas/<schema-name> openspec/schemas/
+mkdir -p openspec/schemas
+```
+
+```bash
+cp -r /tmp/lukk17-schemas/openspec/schemas/e2e-runbooks openspec/schemas/
 ```
 
 ```bash
 rm -rf /tmp/lukk17-schemas
 ```
 
+**Windows (PowerShell 7+):**
+
 ```powershell
 git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas $env:TEMP\lukk17-schemas
 ```
 
 ```powershell
-Copy-Item -Recurse $env:TEMP\lukk17-schemas\<schema-name> openspec\schemas\
+New-Item -ItemType Directory -Force openspec\schemas | Out-Null
+```
+
+```powershell
+Copy-Item -Recurse $env:TEMP\lukk17-schemas\openspec\schemas\e2e-runbooks openspec\schemas\
 ```
 
 ```powershell
 Remove-Item -Recurse -Force $env:TEMP\lukk17-schemas
 ```
 
-Pin to a release tag (`--branch vX.Y.Z`) when you want reproducible installs; drop the flag to follow `master`.
+To install every schema at once, copy the whole `openspec/schemas/` directory instead of one subdir. Pin to a release
+tag (`--branch vX.Y.Z`) for reproducible installs; drop the flag to follow `master`.
 
 Then either invoke the schema per-change:
 
@@ -78,7 +95,7 @@ canonical OpenSpec lifecycle is:
 4. `openspec archive <id>` — finalises the change.
 
 Schemas may instruct the agent to write artifacts to additional locations outside `openspec/changes/<id>/`. The
-[e2e-runbooks](./e2e-runbooks/) schema, for example, dual-writes specs and run records into a separate `e2e/`
+[e2e-runbooks](./openspec/schemas/e2e-runbooks/) schema, for example, dual-writes specs and run records into a separate `e2e/`
 tree because OpenSpec's archive only auto-promotes `openspec/specs/`. Each schema's `INTEGRATION.md` spells out
 its own out-of-tree write paths.
 
@@ -91,7 +108,7 @@ agent-standards selective checkout into the consumer project; the schema is inst
 
 | Schema | Skill (in `agent-standards`) | Subagent (in `agent-standards`) |
 | --- | --- | --- |
-| [e2e-runbooks](./e2e-runbooks/) | [`.agents/skills/e2e-runbooks/`](https://github.com/Lukk17/agent-standards/tree/master/.agents/skills/e2e-runbooks) | [`.claude/agents/e2e-runner.md`, `.opencode/agents/e2e-runner.md`](https://github.com/Lukk17/agent-standards) |
+| [e2e-runbooks](./openspec/schemas/e2e-runbooks/) | [`.agents/skills/e2e-runbooks/`](https://github.com/Lukk17/agent-standards/tree/master/.agents/skills/e2e-runbooks) | [`.claude/agents/e2e-runner.md`, `.opencode/agents/e2e-runner.md`](https://github.com/Lukk17/agent-standards) |
 
 The `e2e-runbooks` skill and `e2e-runner` subagent both ship in agent-standards. Schemas and skills can be adopted
 independently — pairing them reduces the seams.
@@ -136,7 +153,7 @@ guard against upstream drift.
 
 ## Contributing
 
-Each schema is its own folder at the repo root with the standard OpenSpec bundle layout (`schema.yaml`, `README.md`,
+Each schema lives at `openspec/schemas/<name>/` with the standard OpenSpec bundle layout (`schema.yaml`, `README.md`,
 optional `INTEGRATION.md`, `templates/`). Open a PR against `master`. CI will run the validate + round-trip + lint
 workflows; all three must pass before merge.
 

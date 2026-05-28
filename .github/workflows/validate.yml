@@ -47,7 +47,7 @@ jobs:
         id: discover
         run: |
           set -euo pipefail
-          schemas=$(find . -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*' | sed 's|^\./||' | sed 's|/schema\.yaml$||' | sort)
+          schemas=$(find openspec/schemas -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*' | sed 's|^\./||' | sed 's|/schema\.yaml$||' | sort)
           echo "Found schemas:"
           echo "$schemas"
           if [ -z "$schemas" ]; then
@@ -92,20 +92,21 @@ jobs:
       - name: Template structure checks (e2e-runbooks)
         run: |
           set -euo pipefail
-          spec=e2e-runbooks/templates/test-spec.md
+          templates=openspec/schemas/e2e-runbooks/templates
+          spec="$templates/test-spec.md"
           count=$(grep -c '^## ' "$spec")
           if [ "$count" -ne 7 ]; then
             echo "::error file=$spec::expected 7 top-level sections, found $count"
             exit 1
           fi
-          grep -q '^## Concurrency profile' e2e-runbooks/templates/proposal.md \
-            || { echo "::error file=e2e-runbooks/templates/proposal.md::missing '## Concurrency profile' section"; exit 1; }
+          grep -q '^## Concurrency profile' "$templates/proposal.md" \
+            || { echo "::error file=$templates/proposal.md::missing '## Concurrency profile' section"; exit 1; }
           grep -q '^## Concurrency' "$spec" \
             || { echo "::error file=$spec::missing '## Concurrency' section"; exit 1; }
           for f in proposal.md test-spec.md; do
             for field in 'Mutates:' 'Conflicts with:' 'Serial:'; do
-              grep -q "$field" "e2e-runbooks/templates/$f" \
-                || { echo "::error file=e2e-runbooks/templates/$f::missing Concurrency field '$field'"; exit 1; }
+              grep -q "$field" "$templates/$f" \
+                || { echo "::error file=$templates/$f::missing Concurrency field '$field'"; exit 1; }
             done
           done
 

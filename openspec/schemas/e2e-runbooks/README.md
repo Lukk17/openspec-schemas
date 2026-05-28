@@ -62,28 +62,39 @@ substitute schema placeholders in `generates:` paths.
 
 ## Install
 
-Your consumer project must already have OpenSpec initialised (`openspec init`); the schema installs under its
-`openspec/schemas/` directory. OpenSpec has no schema-install CLI yet, so the install is a manual copy. From the
-consumer project's root:
+This schema lives at `openspec/schemas/e2e-runbooks/` in the source repo — the same path it needs in your consumer
+project. Your consumer project must already have OpenSpec initialised (`openspec init`).
+
+**Linux / macOS / WSL:**
 
 ```bash
 git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas /tmp/lukk17-schemas
 ```
 
 ```bash
-cp -r /tmp/lukk17-schemas/e2e-runbooks openspec/schemas/
+mkdir -p openspec/schemas
+```
+
+```bash
+cp -r /tmp/lukk17-schemas/openspec/schemas/e2e-runbooks openspec/schemas/
 ```
 
 ```bash
 rm -rf /tmp/lukk17-schemas
 ```
 
+**Windows (PowerShell 7+):**
+
 ```powershell
 git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas $env:TEMP\lukk17-schemas
 ```
 
 ```powershell
-Copy-Item -Recurse $env:TEMP\lukk17-schemas\e2e-runbooks openspec\schemas\
+New-Item -ItemType Directory -Force openspec\schemas | Out-Null
+```
+
+```powershell
+Copy-Item -Recurse $env:TEMP\lukk17-schemas\openspec\schemas\e2e-runbooks openspec\schemas\
 ```
 
 ```powershell

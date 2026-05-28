@@ -84,7 +84,7 @@ jobs:
             cd "$repo_root"
             rm -rf "$tmp"
             echo "::endgroup::"
-          done < <(find . -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*' -print0)
+          done < <(find openspec/schemas -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*' -print0)
 
       # Extract the matching CHANGELOG.md section body so the release notes
       # are the curated prose the maintainer wrote, not GitHub's mechanical
