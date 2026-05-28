@@ -86,6 +86,55 @@ jobs:
             echo "::endgroup::"
           done < <(find . -maxdepth 2 -name schema.yaml -not -path './node_modules/*' -not -path './.git/*' -print0)
 
+      # Extract the matching CHANGELOG.md section body so the release notes
+      # are the curated prose the maintainer wrote, not GitHub's mechanical
+      # commit-title list. Tries (in order): "## [vX.Y.Z]", "## [X.Y.Z]",
+      # then "## [Unreleased]". Fails the release if the chosen section has
+      # no body — that catches the "forgot to write a changelog entry" case.
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          VERSION_BARE: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          version="${VERSION_BARE#v}"
+          if [ ! -f CHANGELOG.md ]; then
+            echo "::error::CHANGELOG.md not found at repo root"
+            exit 1
+          fi
+          # Prefix-match so headings can carry a trailing date — e.g. the
+          # CHANGELOG heading "## [v0.1.0] - 2026-05-28" matches lookup
+          # "## [v0.1.0]" (the character after the prefix must be space or
+          # EOL, so "## [v0.1.0-rc1]" does NOT match "## [v0.1.0]").
+          extract() {
+            awk -v hdg="$1" '
+              index($0, hdg) == 1 {
+                tail = substr($0, length(hdg) + 1)
+                if (tail == "" || substr(tail, 1, 1) == " ") { found = 1; next }
+              }
+              found && /^## / { exit }
+              found { print }
+            ' CHANGELOG.md
+          }
+          notes=""
+          source=""
+          for heading in "## [v$version]" "## [$version]" "## [Unreleased]"; do
+            candidate=$(extract "$heading")
+            if [ -n "$(printf '%s' "$candidate" | tr -d '[:space:]')" ]; then
+              notes=$candidate
+              source=$heading
+              break
+            fi
+          done
+          if [ -z "$source" ]; then
+            echo "::error::CHANGELOG.md has no entry for v$version, $version, or [Unreleased]"
+            exit 1
+          fi
+          echo "Release notes sourced from: $source"
+          printf '%s\n' "$notes" > release-notes.md
+          echo "----- release-notes.md -----"
+          cat release-notes.md
+          echo "----- end -----"
+
       - name: Create and push tag
         run: |
           set -euo pipefail
@@ -99,4 +148,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
+          gh release create "$TAG" --title "$TAG" --notes-file release-notes.md --verify-tag

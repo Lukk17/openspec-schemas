@@ -62,10 +62,37 @@ artifacts:
       execution order in a sweep. Lower N = lower setup cost = runs first.
       The companion skill at `.agents/skills/e2e-runbooks/SKILL.md`
       (shipped by Lukk17/agent-standards) explains the methodology in
-      full. A matching `e2e-runner` subagent is planned in agent-standards
-      (`.claude/agents/e2e-runner.md` / `.opencode/agents/e2e-runner.md`);
-      prefer it as the sweep delegate once present, otherwise drive the
-      run from the main session.
+      full.
+
+      The proposal MUST declare a Concurrency profile, with three fields:
+
+        - Mutates: the resources this test writes to, deletes from, or
+          invalidates. Name the store and the collection / table / bucket;
+          add a partition (user id, tenant id) when the test only touches
+          one. Read-only probes do not count — write `none`.
+        - Conflicts with: tests this one cannot run alongside even when the
+          Mutates lists do not overlap. Typical entries: "any test that
+          restarts the stack", "any test that talks to the license server".
+          Leave blank if the only conflicts are obvious from Mutates.
+        - Serial: literal `true` or `false`. `true` means this test must run
+          alone — schema migrations, full-stack restarts, anything that
+          touches global config. Default `false`.
+
+      The main agent driving the sweep reads these three fields from every
+      spec before spawning runners. Two specs whose Mutates lists do not
+      overlap can run at the same time; overlapping specs run one after
+      the other; a `Serial: true` spec waits for the in-flight runners to
+      finish, then runs alone. Before spawning, the main agent asks the
+      user how many runners to spawn in parallel (there is no preset
+      ceiling — the user picks based on the test environment). When in
+      doubt about what to put in Mutates, over-declare: an extra entry
+      costs minutes of extra serialisation, a missing entry costs a
+      corrupted run and a forced re-execution.
+
+      The e2e-runner subagent is available in agent-standards at
+      `.claude/agents/e2e-runner.md` and `.opencode/agents/e2e-runner.md`.
+      Use it as the sweep delegate; it owns the runner contract and the
+      dual-write into `e2e/testing/runs/`.
 
       The proposal itself stays inside the change directory; no e2e/
       mirror needed.
@@ -74,13 +101,14 @@ artifacts:
   - id: test-spec
     generates: test-spec.md
     description: >-
-      The immutable spec for one capability test. Six fixed sections: What
-      this verifies, Prerequisites, Reset state, Run, Expected, Fixtures.
+      The immutable spec for one capability test. Seven fixed sections: What
+      this verifies, Prerequisites, Reset state, Run, Expected, Fixtures,
+      Concurrency.
     template: test-spec.md
     instruction: |
-      Generate the immutable spec from the proposal. Six fixed sections in
+      Generate the immutable spec from the proposal. Seven fixed sections in
       this order: What this verifies, Prerequisites, Reset state, Run,
-      Expected, Fixtures. Each prerequisite check is its own fenced code
+      Expected, Fixtures, Concurrency. Each prerequisite check is its own fenced code
       block with prose stating the success criterion. Each Reset command is
       its own fenced code block, in execution order. Each Run step is a
       single API client invocation; multi-step tests instruct the runner to
@@ -96,6 +124,10 @@ artifacts:
 
       The change-dir copy is the proposal's audit trail. The e2e/testing/
       copy is the working asset future runs consume.
+
+      Include the Concurrency section verbatim from the proposal so the
+      spec carries the scheduling metadata the orchestrator needs at
+      sweep time.
     requires: [proposal]
 
   - id: tasks-template
@@ -157,9 +189,10 @@ artifacts:
         6. Write the Result summary paragraph and the Verdict (PASS or FAIL).
         7. Log anything done outside the spec under "Additional tasks I did".
 
-      If the `e2e-runner` subagent is available (planned in agent-standards),
-      delegate the run to it; it owns the runner contract and the change-dir /
-      runs/ dual-write. Otherwise execute the run from the main session.
+      The e2e-runner subagent is available in agent-standards at
+      `.claude/agents/e2e-runner.md` and `.opencode/agents/e2e-runner.md`.
+      Use it as the sweep delegate; it owns the runner contract and the
+      dual-write into `e2e/testing/runs/`.
     requires: [tasks-template]
 
 apply:

@@ -85,6 +85,30 @@ jobs:
             echo "::endgroup::"
           done <<< "$SCHEMAS"
 
+      # Catches the most common drift the validate + round-trip steps miss:
+      # a renamed/dropped/added section in test-spec.md (the description and
+      # instruction fields both claim a fixed section count), and a missing
+      # Concurrency field in either proposal.md or test-spec.md.
+      - name: Template structure checks (e2e-runbooks)
+        run: |
+          set -euo pipefail
+          spec=e2e-runbooks/templates/test-spec.md
+          count=$(grep -c '^## ' "$spec")
+          if [ "$count" -ne 7 ]; then
+            echo "::error file=$spec::expected 7 top-level sections, found $count"
+            exit 1
+          fi
+          grep -q '^## Concurrency profile' e2e-runbooks/templates/proposal.md \
+            || { echo "::error file=e2e-runbooks/templates/proposal.md::missing '## Concurrency profile' section"; exit 1; }
+          grep -q '^## Concurrency' "$spec" \
+            || { echo "::error file=$spec::missing '## Concurrency' section"; exit 1; }
+          for f in proposal.md test-spec.md; do
+            for field in 'Mutates:' 'Conflicts with:' 'Serial:'; do
+              grep -q "$field" "e2e-runbooks/templates/$f" \
+                || { echo "::error file=e2e-runbooks/templates/$f::missing Concurrency field '$field'"; exit 1; }
+            done
+          done
+
       - name: Round-trip new change with each schema
         env:
           SCHEMAS: ${{ steps.discover.outputs.schemas }}

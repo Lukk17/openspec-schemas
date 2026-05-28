@@ -61,3 +61,9 @@ The response body's `<field>` contains <expected content>.
 content the model can't have memorised. "None." if none. -->
 
 - `<path>` — <one-line description of the canary content>
+
+## Concurrency
+
+- **Mutates:** <copy the Mutates line verbatim from the proposal's Concurrency profile.>
+- **Conflicts with:** <copy the Conflicts with line verbatim from the proposal's Concurrency profile.>
+- **Serial:** <copy the Serial value verbatim from the proposal's Concurrency profile.>

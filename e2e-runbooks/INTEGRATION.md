@@ -47,6 +47,50 @@ templates is the most likely defect class.
 Each piece is independently installable. Skill alone works without OpenSpec. Schema alone works without
 agent-standards. Together they reinforce each other.
 
+## Sweep orchestration
+
+The main agent owns the sweep, not a runner. It reads `e2e/testing/*-test.md` in numeric order, picks one UTC
+timestamp that all runners share, and spawns one `e2e-runner` subagent per test. Before spawning, the main agent asks
+the user how many runners to spawn in parallel — there is no preset ceiling. The right number depends on the test
+environment (a dedicated stack tolerates more parallelism than a shared dev stack, and external dependencies like
+license servers or paid APIs may dictate a low number).
+
+As each runner returns its verdict, the main agent spawns the next pending test until every spec has run. Then it
+aggregates: pass/fail counts, total token usage, total wall-clock time (the longest single run, not the sum), and a
+short list of failures with one-line causes copied from each failing runner's report.
+
+The user-chosen parallel count can be saved as `e2e-runner-max-parallel: <N>` in the consumer project's `AGENTS.md`
+so future sweeps reuse the same number without re-asking.
+
+## Concurrency analysis
+
+Each spec's `Concurrency` section tells the main agent which tests can run at the same time as which others. The main
+agent reads every spec before spawning, then groups tests by the resources they touch:
+
+- Two tests whose `Mutates:` lists do not overlap can run in the same batch.
+- Two tests whose `Mutates:` lists overlap (same store, same collection/table/bucket, same partition) must run one
+  after the other.
+- A test with `Serial: true` waits for all in-flight runners to finish, runs alone, then the rest of the queue
+  resumes.
+
+The user-chosen parallel number is the upper limit; the `Concurrency` rules can only reduce parallelism below it,
+never raise it above. Eight tests with fully disjoint `Mutates:` lists and a user-chosen limit of three will still
+run three at a time.
+
+Field semantics (the agent-standards skill carries the authoritative definitions; this is a quick reference):
+
+- `Mutates:` — every backing-service resource the test writes to, deletes from, or invalidates. Name the store and
+  the collection / table / bucket; add a partition (user id, tenant id) when the test only touches one. Read-only
+  probes do not count — write `none`.
+- `Conflicts with:` — tests this one cannot run alongside even when the `Mutates:` lists do not overlap. Typical
+  entries: "any test that restarts the stack", "any test that talks to the license server". Leave blank if the only
+  conflicts are obvious from `Mutates:` overlap.
+- `Serial:` — literal `true` or `false`. `true` means schema migrations, full-stack restarts, license-server
+  interactions, anything touching global config. Default `false`.
+
+A test that passes when run alone but fails when run in a sweep is almost always a missing entry in some spec's
+`Mutates:` list. The fix is to add the missing resource to the spec, not to insert a sleep.
+
 ## API client choice
 
 The schema does not pin a client. Pick one per project and use it consistently across all tests. Recommended defaults:

@@ -91,11 +91,10 @@ agent-standards selective checkout into the consumer project; the schema is inst
 
 | Schema | Skill (in `agent-standards`) | Subagent (in `agent-standards`) |
 | --- | --- | --- |
-| [e2e-runbooks](./e2e-runbooks/) | [`.agents/skills/e2e-runbooks/`](https://github.com/Lukk17/agent-standards/tree/master/.agents/skills/e2e-runbooks) | `.claude/agents/e2e-runner.md`, `.opencode/agents/e2e-runner.md` _(planned)_ |
+| [e2e-runbooks](./e2e-runbooks/) | [`.agents/skills/e2e-runbooks/`](https://github.com/Lukk17/agent-standards/tree/master/.agents/skills/e2e-runbooks) | [`.claude/agents/e2e-runner.md`, `.opencode/agents/e2e-runner.md`](https://github.com/Lukk17/agent-standards) |
 
-The `e2e-runbooks` skill ships today. The `e2e-runner` subagent is planned for a future agent-standards release — the
-schema and skill are fully usable without it; it just automates the runner role. Skills and schemas can be adopted
-independently; pairing them reduces the seams.
+The `e2e-runbooks` skill and `e2e-runner` subagent both ship in agent-standards. Schemas and skills can be adopted
+independently — pairing them reduces the seams.
 
 ## Validation in CI
 
