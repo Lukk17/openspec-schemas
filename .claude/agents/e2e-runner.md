@@ -1,6 +1,6 @@
 ---
 name: e2e-runner
-description: Use to execute ONE end-to-end capability test against a live stack and return its Verdict plus Result summary. Triggers when a main session needs to fan out an e2e sweep across many tests in parallel — the main session spawns one e2e-runner per test (default cap 5 concurrent, queue the rest), each runner takes one spec path and reports back independently. Do NOT use for adding or editing tests; use the `e2e-runbooks` skill in the main session for authoring. Do NOT use for Playwright UI tests; the `e2e-testing` skill / runner covers those.
+description: Use to execute ONE end-to-end capability test against a live stack and return its Verdict plus Result summary. Triggers when a main session needs to fan out an e2e sweep across many tests in parallel — the main session spawns one e2e-runner per test (default cap 5 concurrent, confirmed with the user before fan-out and typically 3-10 depending on the test environment; queue the rest), each runner takes one spec path and reports back independently. Do NOT use for adding or editing tests; use the `e2e-runbooks` skill in the main session for authoring. Do NOT use for Playwright UI tests; the `e2e-testing` skill / runner covers those.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
 skills:
@@ -23,7 +23,7 @@ If any of those are missing, ask the caller before doing anything else. Do not i
 ## Execution contract
 
 1. Read the spec at the path the caller gave you. Quote the **What this verifies** bullet list back in your first sentence so the caller can confirm you opened the right spec.
-2. Locate the paired tasks template at `e2e/testing/{N}-{capability}-tasks.template.md`. If it doesn't exist, abort and report; do not invent a template.
+2. Locate the paired tasks template at `e2e/testing/templates/{N}-{capability}-tasks.template.md`. If it doesn't exist, abort and report; do not invent a template.
 3. Copy the template to `e2e/testing/runs/<sweep-timestamp>_{N}-{capability}-tasks.md`. Use the caller's sweep timestamp verbatim; never generate your own.
 4. **Record `Start (UTC)` as the very first action**, before any prerequisite check. This is wall-clock time the moment you begin work, not the moment you finish opening files.
 5. Execute the spec in order: Prerequisites → Reset state → Run → Expected. Tick each checkbox in the run file as you complete the step on success. On failure, leave the box unticked and record the concrete failure under **Additional tasks I did**.
