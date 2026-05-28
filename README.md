@@ -25,51 +25,47 @@ pairings.
 
 ## Install
 
-Every schema in this repo lives at `openspec/schemas/<name>/` — the exact path it needs in your consumer project. To
-install one, copy that one directory across. The source path and the destination path are identical, so the `cp`
-command reads as a straight mirror.
+Every schema in this repo lives at `openspec/schemas/<name>/` — the exact path it needs in your consumer project.
+Install is a `git fetch` + `git checkout` from inside your project that writes only the schema's directory; nothing
+else in your tree is touched. Same pattern as agent-standards' selective checkout.
 
-Replace `e2e-runbooks` below with the schema you want. Your consumer project must already have OpenSpec initialised
-(`openspec init`).
-
-**Linux / macOS / WSL:**
+Your consumer project must be a git repo and must have OpenSpec initialised (`openspec init`). Run from the project
+root, replacing `e2e-runbooks` with whichever schema you want and `v0.1.0` with the version to pin:
 
 ```bash
-git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas /tmp/lukk17-schemas
+git fetch --depth 1 https://github.com/Lukk17/openspec-schemas v0.1.0
 ```
 
 ```bash
-mkdir -p openspec/schemas
+git checkout FETCH_HEAD -- openspec/schemas/e2e-runbooks
+```
+
+The same two commands work in PowerShell — `git` is `git` on every platform.
+
+To install every schema, replace `openspec/schemas/e2e-runbooks` with `openspec/schemas`. To track `master` instead of
+a tag, replace `v0.1.0` with `master`. The files land in your working tree AND staged — review with `git diff --staged`
+and commit when ready.
+
+If you'll be updating across releases, add the repo as a named remote once so future installs just re-run the two
+commands with the new tag:
+
+```bash
+git remote add openspec-schemas https://github.com/Lukk17/openspec-schemas
 ```
 
 ```bash
-cp -r /tmp/lukk17-schemas/openspec/schemas/e2e-runbooks openspec/schemas/
+git remote set-url --push openspec-schemas no_push
+```
+
+Then later upgrades:
+
+```bash
+git fetch --depth 1 openspec-schemas v0.2.0
 ```
 
 ```bash
-rm -rf /tmp/lukk17-schemas
+git checkout FETCH_HEAD -- openspec/schemas/e2e-runbooks
 ```
-
-**Windows (PowerShell 7+):**
-
-```powershell
-git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas $env:TEMP\lukk17-schemas
-```
-
-```powershell
-New-Item -ItemType Directory -Force openspec\schemas | Out-Null
-```
-
-```powershell
-Copy-Item -Recurse $env:TEMP\lukk17-schemas\openspec\schemas\e2e-runbooks openspec\schemas\
-```
-
-```powershell
-Remove-Item -Recurse -Force $env:TEMP\lukk17-schemas
-```
-
-To install every schema at once, copy the whole `openspec/schemas/` directory instead of one subdir. Pin to a release
-tag (`--branch vX.Y.Z`) for reproducible installs; drop the flag to follow `master`.
 
 Then either invoke the schema per-change:
 
@@ -137,11 +133,8 @@ openspec schema validate <schema-name>
 ## Releases and consumer pinning
 
 Releases are tagged `vX.Y.Z` and published as GitHub Releases by [`.github/workflows/release.yml`](.github/workflows/release.yml).
-Consumers should pin to a tag for reproducibility:
-
-```bash
-git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas /tmp/lukk17-schemas
-```
+Consumers pin to a tag (see [Install](#install) above) so an upstream change can't silently break their installed
+schema. Re-run the two-command install with a new tag to upgrade.
 
 A breaking change to a schema's artifact DAG (renamed artifact id, reordered `requires`, removed field) bumps the
 major. Adding a new artifact or relaxing a constraint bumps the minor. Pure doc / instruction-prose changes bump the

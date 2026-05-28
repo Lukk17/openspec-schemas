@@ -63,43 +63,22 @@ substitute schema placeholders in `generates:` paths.
 ## Install
 
 This schema lives at `openspec/schemas/e2e-runbooks/` in the source repo — the same path it needs in your consumer
-project. Your consumer project must already have OpenSpec initialised (`openspec init`).
+project. Install is a `git fetch` + `git checkout` from inside your project; only the schema's directory is written,
+nothing else in your tree is touched.
 
-**Linux / macOS / WSL:**
-
-```bash
-git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas /tmp/lukk17-schemas
-```
+Your consumer project must be a git repo and must have OpenSpec initialised (`openspec init`). Run from the project
+root:
 
 ```bash
-mkdir -p openspec/schemas
+git fetch --depth 1 https://github.com/Lukk17/openspec-schemas v0.1.0
 ```
 
 ```bash
-cp -r /tmp/lukk17-schemas/openspec/schemas/e2e-runbooks openspec/schemas/
+git checkout FETCH_HEAD -- openspec/schemas/e2e-runbooks
 ```
 
-```bash
-rm -rf /tmp/lukk17-schemas
-```
-
-**Windows (PowerShell 7+):**
-
-```powershell
-git clone --depth 1 --branch v0.1.0 https://github.com/Lukk17/openspec-schemas $env:TEMP\lukk17-schemas
-```
-
-```powershell
-New-Item -ItemType Directory -Force openspec\schemas | Out-Null
-```
-
-```powershell
-Copy-Item -Recurse $env:TEMP\lukk17-schemas\openspec\schemas\e2e-runbooks openspec\schemas\
-```
-
-```powershell
-Remove-Item -Recurse -Force $env:TEMP\lukk17-schemas
-```
+The same two commands work in PowerShell. The files land in your working tree AND staged — review with
+`git diff --staged` and commit when ready. To upgrade later, re-run with the new tag.
 
 Then either invoke per-change (the `change` subcommand is required; `--schema` is an option on it):
 
