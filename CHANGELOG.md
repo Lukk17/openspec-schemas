@@ -7,6 +7,11 @@ workflow, rename `## [Unreleased]` to `## [vX.Y.Z] - YYYY-MM-DD` and open a fres
 
 ## [Unreleased]
 
+### Changed
+
+- README: shortened the intro, added status badges and a docs map, removed em-dashes, and promoted section headings to
+  `###` with horizontal-rule dividers per the project markdown standard.
+
 ## [v0.1.0] - 2026-05-28
 
 ### Added
